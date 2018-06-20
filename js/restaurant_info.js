@@ -88,10 +88,12 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
 
   const image = document.getElementById('restaurant-img');
   image.className = 'restaurant-img'
+  image.alt = restaurant.name;
   image.src = DBHelper.imageUrlForRestaurant(restaurant);
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;
+
 
   // fill operating hours
   if (restaurant.operating_hours) {
@@ -164,9 +166,9 @@ createReviewHTML = (review) => {
   const rating = document.createElement('p');
   const numRating = parseInt(review.rating, 10);
   const ratingString = '&#9733'.repeat(numRating);
-
-  rating.setAttribute('class', 'rating');
-  rating.innerHTML = `<strong>Rating:</strong> ${ratingString}`;
+  rating.className = 'rating';
+  rating.setAttribute('aria-label', `${review.rating} stars`);
+  rating.innerHTML = `<strong>Rating: </strong><span aria-hidden="true">${ratingString}</span>`;
   li.appendChild(rating);
 
   const content = document.createElement('div');

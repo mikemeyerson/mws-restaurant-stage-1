@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -16,6 +16,8 @@
   <header>
     <!-- Beginning nav -->
     <nav>
+      <a href="#restaurant-name" class="skip-link">Skip to Details</a>
+      <a href="#reviews-container" class="skip-link">Skip to Reviews</a>
       <h1><a href="/">Restaurant Reviews</a></h1>
     </nav>
     <!-- Beginning breadcrumb -->
@@ -39,7 +41,8 @@
       <h1 id="restaurant-name"></h1>
       <div class="restaurant-img-wrapper">
         <img id="restaurant-img">
-        <p id="restaurant-cuisine"></p>
+        <p aria-describedby="cuisine-description" id="restaurant-cuisine"></p>
+        <span hidden id="cuisine-description">type of cuisine</span>
       </div>
       <div class="restaurant-details">
         <p id="restaurant-address"></p>
