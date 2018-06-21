@@ -13,6 +13,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
   fetchCuisines();
 });
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+      console.log('ServiceWorker registration successful');
+    }, console.error);
+  });
+}
+
 /**
  * Fetch all neighborhoods and set their HTML.
  */
@@ -177,7 +185,7 @@ createRestaurantHTML = (restaurant) => {
   contentDiv.append(link);
 
   const image = document.createElement('img');
-  image.alt = restaurant.name;
+  image.alt = `Photograph inside ${restaurant.name}`;
   image.className = 'restaurant-img';
   image.src = DBHelper.imageUrlForRestaurant(restaurant);
   imageDiv.append(image);
