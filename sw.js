@@ -1,4 +1,4 @@
-const version = 1;
+const version = 3;
 const currentCacheName = `restaurants-cache-v${version}`;
 
 self.addEventListener('install', event => {
@@ -35,8 +35,8 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    Promise.all(
-      caches.keys().then(cacheNames => cacheNames
+    caches.keys().then(cacheNames =>
+      Promise.all(cacheNames
         .filter(name => name !== currentCacheName)
         .map(name => caches.delete(name))
       )
