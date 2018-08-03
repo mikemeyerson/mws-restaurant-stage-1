@@ -8,13 +8,17 @@
     "@babel/core": "^7.0.0-beta.55",
     "@babel/preset-env": "^7.0.0-beta.55",
     "babel-loader": "^8.0.0-beta.4",
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-plugin-import": "^2.13.0",
     "webpack": "^4.16.4",
     "webpack-cli": "^3.1.0",
     "webpack-dev-server": "^3.1.5"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-	"build": "webpack"
+    "build": "webpack",
+	"lint": "eslint --fix --ignore-path .gitignore ."
   },
   "repository": {
     "type": "git",
