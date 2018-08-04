@@ -1,4 +1,4 @@
-const version = 3;
+const version = 4;
 const currentCacheName = `restaurants-cache-v${version}`;
 
 self.addEventListener('install', event => {
@@ -6,7 +6,6 @@ self.addEventListener('install', event => {
     'js/main.js',
     'js/dbhelper.js',
     'js/restaurant_info.js',
-    'data/restaurants.json',
     'css/styles.css'
   ];
 
@@ -30,6 +29,11 @@ self.addEventListener('fetch', event => {
         });
       })
     )
+    .catch(err => {
+      console.error('Failed on SW fetch');
+      console.error(err);
+      return Promise.reject(err);
+    })
   );
 });
 
