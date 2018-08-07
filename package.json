@@ -19,8 +19,8 @@
     "webpack-dev-server": "^3.1.5"
   },
   "scripts": {
-	"start": "python -m SimpleHTTPServer 8000",
-	"start:dev": "webpack-dev-server --mode development --hot",
+    "start": "python -m SimpleHTTPServer 8000",
+    "start:dev": "webpack-dev-server --mode development --hot",
     "build": "webpack",
     "lint": "eslint --fix --ignore-path .gitignore .",
     "test": "echo \"Error: no test specified\" && exit 1"
