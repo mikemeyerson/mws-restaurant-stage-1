@@ -1,4 +1,4 @@
-const version = 6;
+const version = 7;
 const currentCacheName = `restaurants-cache-v${version}`;
 
 self.addEventListener('install', (event) => {

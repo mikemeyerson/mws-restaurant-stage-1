@@ -201,7 +201,7 @@ nav h1 a {
   margin: 0;
   max-width: 100%;
 }
-#restaurants-list li h1 {
+#restaurants-list li h2 {
   color: crimson;
   font-family: Arial,sans-serif;
   font-size: 1.5rem;
@@ -277,7 +277,7 @@ nav h1 a {
   display: flex;
   flex-direction: column;
 }
-#reviews-container h2 {
+#reviews-container h3 {
   color: crimson;
   font-size: 2rem;
   font-weight: 300;

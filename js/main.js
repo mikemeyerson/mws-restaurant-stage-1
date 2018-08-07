@@ -153,7 +153,7 @@ window.createRestaurantHTML = (restaurant) => {
   imageDiv.className = 'restaurant-img-wrapper';
   li.append(imageDiv);
 
-  const name = document.createElement('h1');
+  const name = document.createElement('h2');
   const id = `restaurant-${counter++}`;
   name.id = id;
   name.innerHTML = restaurant.name;
