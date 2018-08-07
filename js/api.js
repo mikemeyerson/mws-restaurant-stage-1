@@ -1,11 +1,20 @@
+import idb from 'idb';
+
 /**
  * Common database helper functions.
  */
+
 export default class APIHelper {
+  constructor() {
+    this.dbPromise = idb.open('restaurant-reviews', 1, (upgradeDb) => {
+      upgradeDb.createObjectStore('restaurants', { keyPath: 'id' });
+    });
+  }
+
   /**
-   * Database URL.
+   * API URL.
    */
-  static get DATABASE_URL() {
+  static get API_URL() {
     const port = 1337;
     return `http://localhost:${port}/restaurants`;
   }
@@ -13,40 +22,62 @@ export default class APIHelper {
   /**
    * Fetch all restaurants.
    */
-  static fetchRestaurants() {
-    return fetch(APIHelper.DATABASE_URL)
-      .then(response => response.json());
+  fetchRestaurants() {
+    return this.dbPromise
+      .then((db) => {
+        const readStore = db
+          .transaction('restaurants')
+          .objectStore('restaurants');
+
+        return readStore.getAll()
+          .then((idbRestaurants) => {
+            if (idbRestaurants.length > 0) {
+              return idbRestaurants;
+            }
+
+            return fetch(APIHelper.API_URL)
+              .then(response => response.json())
+              .then((networkRestaurants) => {
+                const writeStore = db
+                  .transaction('restaurants', 'readwrite')
+                  .objectStore('restaurants');
+
+                networkRestaurants.forEach(r => writeStore.put(r));
+                return networkRestaurants;
+              });
+          });
+      });
   }
 
   /**
    * Fetch a restaurant by its ID.
    */
-  static fetchRestaurantById(id) {
-    return fetch(`${APIHelper.DATABASE_URL}/${id}`)
-      .then(response => response.json());
+  fetchRestaurantById(id) {
+    return this.fetchRestaurants()
+      .then(restaurants => restaurants.find(r => r.id === id));
   }
 
   /**
    * Fetch restaurants by a cuisine type with proper error handling.
    */
-  static fetchRestaurantByCuisine(cuisine) {
-    return APIHelper.fetchRestaurants()
+  fetchRestaurantByCuisine(cuisine) {
+    return this.fetchRestaurants()
       .then(restaurants => restaurants.filter(r => r.cuisine_type === cuisine));
   }
 
   /**
    * Fetch restaurants by a neighborhood with proper error handling.
    */
-  static fetchRestaurantByNeighborhood(neighborhood) {
-    return APIHelper.fetchRestaurants()
+  fetchRestaurantByNeighborhood(neighborhood) {
+    return this.fetchRestaurants()
       .then(restaurants => restaurants.filter(r => r.neighborhood === neighborhood));
   }
 
   /**
    * Fetch restaurants by a cuisine and a neighborhood with proper error handling.
    */
-  static fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood) {
-    return APIHelper.fetchRestaurants()
+  fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood) {
+    return this.fetchRestaurants()
       .then((restaurants) => {
         let results = restaurants;
 
@@ -65,8 +96,8 @@ export default class APIHelper {
   /**
    * Fetch all neighborhoods with proper error handling.
    */
-  static fetchNeighborhoods() {
-    return APIHelper.fetchRestaurants()
+  fetchNeighborhoods() {
+    return this.fetchRestaurants()
       .then(restaurants => restaurants
         .map(({ neighborhood }) => neighborhood)
         .filter((neighborhood, i, arr) => arr.indexOf(neighborhood) === i));
@@ -75,8 +106,8 @@ export default class APIHelper {
   /**
    * Fetch all cuisines with proper error handling.
    */
-  static fetchCuisines() {
-    return APIHelper.fetchRestaurants()
+  fetchCuisines() {
+    return this.fetchRestaurants()
       .then(restaurants => restaurants
         .map(({ cuisine_type }) => cuisine_type)
         .filter((cuisine, i, arr) => arr.indexOf(cuisine) === i));

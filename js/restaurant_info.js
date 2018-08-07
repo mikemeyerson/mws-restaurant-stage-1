@@ -2,6 +2,7 @@ import APIHelper from './api';
 
 let restaurant;
 let newMap;
+const api = new APIHelper();
 
 /**
  * Initialize map as soon as the page is loaded.
@@ -46,7 +47,7 @@ window.fetchRestaurantFromURL = () => {
     return Promise.reject(new Error('No restaurant id in URL'));
   }
 
-  return APIHelper.fetchRestaurantById(id)
+  return api.fetchRestaurantById(parseInt(id, 10))
     .then((_restaurant) => {
       restaurant = _restaurant;
       window.fillRestaurantHTML();

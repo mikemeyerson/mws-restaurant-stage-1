@@ -1,27 +1,28 @@
 import APIHelper from './api';
-import IDBHelper from './idb';
 
 let restaurants;
 let neighborhoods;
 let cuisines;
 let newMap;
-let idbPromise;
 let markers = [];
+const api = new APIHelper();
 
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', () => {
   window.initMap(); // added
-  window.fetchNeighborhoods();
-  window.fetchCuisines();
-  idbPromise = IDBHelper.openDatabase();
+  window.updateRestaurants()
+    .then(() => {
+      window.fetchNeighborhoods();
+      window.fetchCuisines();
+    });
 });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(() => {
-      console.log('ServiceWorker registration successful');
+      console.log('Service Worker registration successful');
     }, console.error);
   });
 }
@@ -29,7 +30,7 @@ if ('serviceWorker' in navigator) {
 /**
  * Fetch all neighborhoods and set their HTML.
  */
-window.fetchNeighborhoods = () => APIHelper.fetchNeighborhoods()
+window.fetchNeighborhoods = () => api.fetchNeighborhoods()
   .then((_neighborhoods) => {
     neighborhoods = _neighborhoods;
     window.fillNeighborhoodsHTML();
@@ -51,7 +52,7 @@ window.fillNeighborhoodsHTML = (_neighborhoods = neighborhoods) => {
 /**
  * Fetch all cuisines and set their HTML.
  */
-window.fetchCuisines = () => APIHelper.fetchCuisines()
+window.fetchCuisines = () => api.fetchCuisines()
   .then((_cuisines) => {
     cuisines = _cuisines;
     window.fillCuisinesHTML();
@@ -88,8 +89,6 @@ window.initMap = () => {
       + 'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
     id: 'mapbox.streets',
   }).addTo(newMap);
-
-  window.updateRestaurants();
 };
 
 /**
@@ -105,7 +104,7 @@ window.updateRestaurants = () => {
   const cuisine = cSelect[cIndex].value;
   const neighborhood = nSelect[nIndex].value;
 
-  return APIHelper.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood)
+  return api.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood)
     .then((_restaurants) => {
       window.resetRestaurants(_restaurants);
       window.fillRestaurantsHTML();

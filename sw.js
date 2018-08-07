@@ -1,11 +1,11 @@
-const version = 5;
+const version = 6;
 const currentCacheName = `restaurants-cache-v${version}`;
 
 self.addEventListener('install', (event) => {
   const assets = [
-    // 'js/main.js',
-    // 'js/api.js',
-    // 'js/restaurant_info.js',
+    // TODO: Figure out why SW fails pre-caching these
+    // 'dist/index.js',
+    // 'dist/details.js',
     'css/styles.css',
   ];
 
@@ -17,11 +17,9 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
-  // TODO: Remove me
-  const isJSFile = requestUrl.pathname.startsWith('/dist');
   const isAPI = requestUrl.hostname === location.hostname && requestUrl.port === '1337';
 
-  if (isJSFile || isAPI) {
+  if (isAPI) {
     event.respondWith(
       fetch(event.request),
     );
