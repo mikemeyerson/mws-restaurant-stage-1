@@ -5,6 +5,7 @@ import idb from 'idb';
  */
 
 export default class APIHelper {
+  // TODO: Move IDB functionality to service worker
   constructor() {
     this.dbPromise = idb.open('restaurant-reviews', 1, (upgradeDb) => {
       upgradeDb.createObjectStore('restaurants', { keyPath: 'id' });
@@ -123,6 +124,7 @@ export default class APIHelper {
   /**
    * Restaurant image URL.
    */
+  // TODO: Move error handling to service worker fetch catch
   static imageUrlForRestaurant(restaurant) {
     const fileName = restaurant.photograph
       ? `${restaurant.photograph}.jpg`
