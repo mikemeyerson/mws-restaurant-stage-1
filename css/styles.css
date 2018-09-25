@@ -225,6 +225,16 @@ nav h1 a {
   padding: 0.5rem;
   text-transform: uppercase;
 }
+#restaurants-list li .favorite-btn {
+  border: 0;
+  background-color: gold;
+  color: black;
+  font-size: 1.0rem;
+  height: 35px;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
 
 /* ====================== Restaurant Details ====================== */
 .inside header {
@@ -343,6 +353,7 @@ nav h1 a {
     flex-wrap: wrap-reverse;
   }
   #restaurants-list .restaurant-img-wrapper {
+    position: relative;
     width: 100%;
   }
   #restaurants-list .restaurant-details {

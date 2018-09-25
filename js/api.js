@@ -110,8 +110,23 @@ export default class APIHelper {
   fetchCuisines() {
     return this.fetchRestaurants()
       .then(restaurants => restaurants
-        .map(({ cuisine_type }) => cuisine_type)
+        .map(({ cuisine_type: cuisine }) => cuisine)
         .filter((cuisine, i, arr) => arr.indexOf(cuisine) === i));
+  }
+
+  toggleRestaurantFavorite(id, isFavorite) {
+    const url = `${APIHelper.API_URL}/${id}/?is_favorite=${isFavorite}`;
+
+    return fetch(url, { method: 'PUT' })
+      .then(response => Promise.all([response.json(), this.dbPromise]))
+      .then(([restaurant, db]) => {
+        const writeStore = db
+          .transaction('restaurants', 'readwrite')
+          .objectStore('restaurants');
+
+        writeStore.put(restaurant);
+        return restaurant;
+      });
   }
 
   /**
