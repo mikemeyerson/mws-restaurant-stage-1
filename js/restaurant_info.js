@@ -41,21 +41,40 @@ window.fetchRestaurantFromURL = () => {
     return restaurant;
   }
 
-  const id = window.getParameterByName('id');
+  const id = parseInt(window.getParameterByName('id'), 10);
 
   if (!id) { // no id found in URL
     return Promise.reject(new Error('No restaurant id in URL'));
   }
 
-  return api.fetchRestaurantById(parseInt(id, 10))
-    .then((_restaurant) => {
+  const promises = [
+    api.fetchRestaurantById(id),
+    api.fetchReviewsById(id),
+  ];
+
+  return Promise.all(promises)
+    .then(([_restaurant, _reviews]) => {
       restaurant = _restaurant;
+      restaurant.reviews = _reviews;
       window.fillRestaurantHTML();
       return _restaurant;
     })
     .catch((err) => {
       console.error(err);
       throw err;
+    });
+};
+
+
+const getSubmitListener = id => (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(event.target);
+  formData.append('id', id);
+
+  api.addReview(formData)
+    .then(() => {
+      window.location.reload();
     });
 };
 
@@ -84,6 +103,8 @@ window.fillRestaurantHTML = (_restaurant = restaurant) => {
   }
   // fill reviews
   window.fillReviewsHTML();
+
+  document.getElementById('new-review').addEventListener('submit', getSubmitListener(_restaurant.id));
 };
 
 /**
@@ -143,7 +164,9 @@ window.createReviewHTML = (review) => {
   header.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  const updatedAt = new Date(review.updatedAt);
+
+  date.innerHTML = `${updatedAt.getMonth() + 1}/${updatedAt.getDate()}/${updatedAt.getFullYear()}`;
   header.appendChild(date);
 
   const rating = document.createElement('p');

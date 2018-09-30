@@ -295,6 +295,14 @@ nav h1 a {
   padding: 0;
   letter-spacing: -1px;
 }
+#reviews-container #new-review input,
+#reviews-container #new-review textarea {
+  display: block;
+}
+#reviews-container #new-review {
+  font-size: 1.0rem;
+  margin-bottom: 1.5rem;
+}
 #reviews-list {
   margin: 0;
   padding: 0;

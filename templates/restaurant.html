@@ -54,6 +54,23 @@
     <!-- end restaurant -->
     <!-- Beginning reviews -->
     <section id="reviews-container">
+      <form id="new-review">
+        <h3>Add a Review</h3>
+        <label for="reviewer-name">Name</label>
+        <input type="text" name="name" id="reviewer-name" />
+        <label for="rating">Rating (1-5)</label>
+        <input type="range" name="rating" id="rating" step="1" min="1" max="5" list="stars" />
+        <datalist id="stars">
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+          <option>5</option>
+        </datalist>
+        <label for="comments">Comments</label>
+        <textarea id="comments" name="comments" rows="10" cols="50"></textarea>
+        <input type="submit" value="Submit" />
+      </form>
       <ul id="reviews-list"></ul>
     </section>
     <!-- End reviews -->
