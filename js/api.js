@@ -7,15 +7,20 @@ import idb from 'idb';
 export default class APIHelper {
   // TODO: Move IDB functionality to service worker
   constructor() {
-    const version = 2;
+    const version = 3;
     this.dbPromise = idb.open('restaurant-reviews', version, (upgradeDb) => {
-      switch (upgradeDb.oldVersion) { // eslint-disable-line default-case
+      /* eslint-disable no-fallthrough, default-case */
+      switch (upgradeDb.oldVersion) {
         case 0:
           upgradeDb.createObjectStore('restaurants', { keyPath: 'id' });
 
-        case 1: // eslint-disable-line no-fallthrough
-          upgradeDb.createObjectStore('reviews', { keyPath: 'restaurant_id' });
+        case 1:
+          upgradeDb.createObjectStore('reviews');
+
+        case 2:
+          upgradeDb.createObjectStore('offline-reviews', { keyPath: 'id' });
       }
+      /* eslint-enable no-fallthrough, default-case */
     });
   }
 
@@ -27,50 +32,38 @@ export default class APIHelper {
     return `http://localhost:${port}`;
   }
 
-  static fetchIndexedDBFirst(dbPromise, objectStore, url, fetchCallback) {
-    return dbPromise
-      .then((db) => {
+  fetchReviewsById(id) {
+    const url = `${APIHelper.API_URL}/reviews/?restaurant_id=${id}`;
+    let db;
+
+    return this.dbPromise
+      .then((_db) => {
+        db = _db;
         const readStore = db
-          .transaction(objectStore)
-          .objectStore(objectStore);
+          .transaction('reviews')
+          .objectStore('reviews');
 
-        return readStore.getAll()
-          .then((result) => {
-            if (result && result.length > 0) {
-              return result;
-            }
+        return readStore.get(id);
+      })
+      .then((result) => {
+        if (result && result.length > 0) {
+          return result;
+        }
 
-            return fetch(url)
-              .then(response => response.json())
-              .then((networkResult) => {
-                const writeStore = db
-                  .transaction(objectStore, 'readwrite')
-                  .objectStore(objectStore);
+        return fetch(url)
+          .then(response => response.json())
+          .then((reviews) => {
+            const writeStore = db
+              .transaction('reviews', 'readwrite')
+              .objectStore('reviews');
 
-                return fetchCallback(writeStore, networkResult);
-              });
+            writeStore.put(reviews, id);
+            return reviews;
           });
       });
   }
 
-  fetchReviewsById(id) {
-    const url = `${APIHelper.API_URL}/reviews/?restaurant_id=${id}`;
-    const storeReviews = (writeStore, reviews) => {
-      writeStore.put(reviews);
-      return reviews;
-    };
-
-
-    return APIHelper.fetchIndexedDBFirst(
-      this.dbPromise,
-      'reviews',
-      url,
-      storeReviews,
-    );
-  }
-
-  // TODO: Figure out how to retrieve / store reviews
-  // - Need to combine a new review with pre-existing array
+  // TODO: Post offline reviews
   // - https://developer.mozilla.org/en-US/docs/Web/API/NavigatorOnLine/onLine
   addReview(formData) {
     const url = `${APIHelper.API_URL}/reviews/`;
@@ -80,15 +73,58 @@ export default class APIHelper {
       body[key] = value;
     }
 
-    return fetch(url, { method: 'POST', body: JSON.stringify(body) })
-      .then(response => Promise.all([response.json(), this.dbPromise]))
-      .then(([restaurant, db]) => {
+    const mandatoryParams = [
+      'comments',
+      'id',
+      'name',
+      'rating',
+      'restaurant_id',
+    ];
+
+    if (!mandatoryParams.every(param => body[param])) {
+      throw new Error('Add review missing params');
+    }
+
+    const getOfflinePromise = () => this.dbPromise
+      .then((db) => {
         const writeStore = db
+          .transaction('offline-reviews', 'readwrite')
+          .objectStore('offline-reviews');
+
+        writeStore.put(body);
+        return body;
+      });
+
+    const getOnlinePromise = () => fetch(url, { method: 'POST', body: JSON.stringify(body) })
+      .then(response => response.json());
+
+    const promise = !window.navigator || !window.navigator.onLine
+      ? getOfflinePromise()
+      : getOnlinePromise();
+
+    let db;
+    let newReview;
+
+    const key = parseInt(body.restaurant_id, 10);
+
+    return Promise.all([promise, this.dbPromise])
+      .then(([_newReview, _db]) => {
+        db = _db;
+        newReview = _newReview;
+
+        const readStore = db
+          .transaction('reviews')
+          .objectStore('reviews');
+
+        return readStore.get(key);
+      })
+      .then((reviews) => {
+        const readWriteStore = db
           .transaction('reviews', 'readwrite')
           .objectStore('reviews');
 
-        writeStore.put(restaurant);
-        return restaurant;
+        readWriteStore.put([...reviews, newReview], key);
+        return newReview;
       });
   }
 
@@ -96,17 +132,33 @@ export default class APIHelper {
    * Fetch all restaurants.
    */
   fetchRestaurants() {
-    const storeRestaurants = (writeStore, networkRestaurants) => {
-      networkRestaurants.forEach(r => writeStore.put(r));
-      return networkRestaurants;
-    };
+    let db;
 
-    return APIHelper.fetchIndexedDBFirst(
-      this.dbPromise,
-      'restaurants',
-      `${APIHelper.API_URL}/restaurants`,
-      storeRestaurants,
-    );
+    return this.dbPromise
+      .then((_db) => {
+        db = _db;
+        const readStore = db
+          .transaction('restaurants')
+          .objectStore('restaurants');
+
+        return readStore.getAll();
+      })
+      .then((result) => {
+        if (result && result.length > 0) {
+          return result;
+        }
+
+        return fetch(`${APIHelper.API_URL}/restaurants`)
+          .then(response => response.json())
+          .then((networkRestaurants) => {
+            const writeStore = db
+              .transaction('restaurants', 'readwrite')
+              .objectStore('restaurants');
+
+            networkRestaurants.forEach(r => writeStore.put(r));
+            return networkRestaurants;
+          });
+      });
   }
 
   /**

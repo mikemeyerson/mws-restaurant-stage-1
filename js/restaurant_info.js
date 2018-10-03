@@ -70,7 +70,8 @@ const getSubmitListener = id => (event) => {
   event.preventDefault();
 
   const formData = new FormData(event.target);
-  formData.append('id', id);
+  formData.append('restaurant_id', id);
+  formData.append('id', Date.now());
 
   api.addReview(formData)
     .then(() => {
