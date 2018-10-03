@@ -63,10 +63,27 @@ export default class APIHelper {
       });
   }
 
-  // TODO: Post offline reviews
-  // - https://developer.mozilla.org/en-US/docs/Web/API/NavigatorOnLine/onLine
-  addReview(formData) {
+  addOfflineReviews() {
+    return this.dbPromise
+      .then(db => db.transaction('offline-reviews', 'readwrite').objectStore('offline-reviews').openCursor())
+      .then(function iterateCursor(cursor) {
+        if (!cursor) return null;
+
+        APIHelper.addOnlineReview(cursor.value);
+        return cursor.delete().then(() => cursor.continue().then(iterateCursor));
+      });
+  }
+
+  static addOnlineReview(body) {
     const url = `${APIHelper.API_URL}/reviews/`;
+
+    return fetch(url, { method: 'POST', body: JSON.stringify(body) })
+      .then(response => response.json());
+  }
+
+  // TODO: Date not showing correctly for offline reviews, not updated when posted
+  // TODO: Don't add to both offline-reviews AND reviews? Just pull from both for fetch?
+  addReview(formData) {
     const body = {};
 
     for (const [key, value] of formData.entries()) { // eslint-disable-line no-restricted-syntax
@@ -95,10 +112,9 @@ export default class APIHelper {
         return body;
       });
 
-    const getOnlinePromise = () => fetch(url, { method: 'POST', body: JSON.stringify(body) })
-      .then(response => response.json());
+    const getOnlinePromise = () => APIHelper.addOnlineReview(body);
 
-    const promise = !window.navigator || !window.navigator.onLine
+    const promise = (!window.navigator || !window.navigator.onLine)
       ? getOfflinePromise()
       : getOnlinePromise();
 
@@ -107,6 +123,7 @@ export default class APIHelper {
 
     const key = parseInt(body.restaurant_id, 10);
 
+    // TODO: Move this to online promise only?
     return Promise.all([promise, this.dbPromise])
       .then(([_newReview, _db]) => {
         db = _db;

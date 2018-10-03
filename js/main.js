@@ -27,6 +27,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+window.addEventListener('online', api.addOfflineReviews.bind(api));
+
 /**
  * Fetch all neighborhoods and set their HTML.
  */

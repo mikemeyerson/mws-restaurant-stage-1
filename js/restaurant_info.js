@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.initMap();
 });
 
+window.addEventListener('online', api.addOfflineReviews.bind(api));
+
 /**
  * Initialize leaflet map
  */
