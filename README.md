@@ -4,7 +4,7 @@
 
 ## How To Run
 
-Clone this repo and the [Stage 2 API](https://github.com/udacity/mws-restaurant-stage-2) repo.
+Clone this repo and the [Stage 3 API](https://github.com/udacity/mws-restaurant-stage-3) repo.
 
 *Server*
 - `npm install`
