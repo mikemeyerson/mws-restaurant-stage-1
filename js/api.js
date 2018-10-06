@@ -18,7 +18,7 @@ export default class APIHelper {
           upgradeDb.createObjectStore('reviews');
 
         case 2:
-          upgradeDb.createObjectStore('offline-reviews', { keyPath: 'id' });
+          upgradeDb.createObjectStore('offline-reviews');
       }
       /* eslint-enable no-fallthrough, default-case */
     });
@@ -39,92 +39,77 @@ export default class APIHelper {
     return this.dbPromise
       .then((_db) => {
         db = _db;
-        const readStore = db
+        const reviewStore = db
           .transaction('reviews')
           .objectStore('reviews');
 
-        return readStore.get(id);
+        const offlineReviewStore = db
+          .transaction('offline-reviews')
+          .objectStore('offline-reviews');
+
+        return Promise.all([
+          reviewStore.get(id),
+          offlineReviewStore.get(id),
+        ]);
       })
-      .then((result) => {
-        if (result && result.length > 0) {
-          return result;
+      .then(([reviews = [], offlineReviews = []]) => {
+        const allReviews = [...reviews, ...offlineReviews];
+
+        if (allReviews.length > 0) {
+          return allReviews;
         }
 
         return fetch(url)
           .then(response => response.json())
-          .then((reviews) => {
+          .then((networkReviews) => {
             const writeStore = db
               .transaction('reviews', 'readwrite')
               .objectStore('reviews');
 
-            writeStore.put(reviews, id);
-            return reviews;
+            writeStore.put(networkReviews, id);
+            return networkReviews;
           });
       });
   }
 
-  addOfflineReviews() {
+  addOfflineReview(formData) {
+    let db;
+
     return this.dbPromise
-      .then(db => db.transaction('offline-reviews', 'readwrite').objectStore('offline-reviews').openCursor())
-      .then(function iterateCursor(cursor) {
-        if (!cursor) return null;
+      .then((_db) => {
+        db = _db;
 
-        APIHelper.addOnlineReview(cursor.value);
-        return cursor.delete().then(() => cursor.continue().then(iterateCursor));
-      });
-  }
+        const readStore = db
+          .transaction('offline-reviews')
+          .objectStore('offline-reviews');
 
-  static addOnlineReview(body) {
-    const url = `${APIHelper.API_URL}/reviews/`;
-
-    return fetch(url, { method: 'POST', body: JSON.stringify(body) })
-      .then(response => response.json());
-  }
-
-  // TODO: Date not showing correctly for offline reviews, not updated when posted
-  // TODO: Don't add to both offline-reviews AND reviews? Just pull from both for fetch?
-  addReview(formData) {
-    const body = {};
-
-    for (const [key, value] of formData.entries()) { // eslint-disable-line no-restricted-syntax
-      body[key] = value;
-    }
-
-    const mandatoryParams = [
-      'comments',
-      'id',
-      'name',
-      'rating',
-      'restaurant_id',
-    ];
-
-    if (!mandatoryParams.every(param => body[param])) {
-      throw new Error('Add review missing params');
-    }
-
-    const getOfflinePromise = () => this.dbPromise
-      .then((db) => {
+        return readStore.get(formData.restaurant_id);
+      })
+      .then((offlineReviews = []) => {
         const writeStore = db
           .transaction('offline-reviews', 'readwrite')
           .objectStore('offline-reviews');
 
-        writeStore.put(body);
-        return body;
+        writeStore.put([...offlineReviews, formData], formData.restaurant_id);
+        return formData;
       });
+  }
 
-    const getOnlinePromise = () => APIHelper.addOnlineReview(body);
+  addOnlineReview(formData) {
+    const url = `${APIHelper.API_URL}/reviews/`;
 
-    const promise = (!window.navigator || !window.navigator.onLine)
-      ? getOfflinePromise()
-      : getOnlinePromise();
+    const sendReview = () => fetch(url, { method: 'POST', body: JSON.stringify(formData) })
+      .then(response => response.json());
+
+    const promises = [
+      sendReview(),
+      this.dbPromise,
+    ];
 
     let db;
     let newReview;
 
-    const key = parseInt(body.restaurant_id, 10);
-
-    // TODO: Move this to online promise only?
-    return Promise.all([promise, this.dbPromise])
+    return Promise.all(promises)
       .then(([_newReview, _db]) => {
         db = _db;
         newReview = _newReview;
@@ -133,16 +118,49 @@ export default class APIHelper {
           .transaction('reviews')
           .objectStore('reviews');
 
-        return readStore.get(key);
+        return readStore.get(formData.restaurant_id);
       })
-      .then((reviews) => {
+      .then((reviews = []) => {
         const readWriteStore = db
           .transaction('reviews', 'readwrite')
           .objectStore('reviews');
 
-        readWriteStore.put([...reviews, newReview], key);
+        readWriteStore.put([...reviews, newReview], formData.restaurant_id);
         return newReview;
-      });
+      })
+      .catch(() => this.addOfflineReview(formData));
+  }
+
+  addReview(formData) {
+    const mandatoryParams = [
+      'comments',
+      'id',
+      'name',
+      'rating',
+      'restaurant_id',
+    ];
+
+    if (!mandatoryParams.every(param => formData[param])) {
+      throw new Error('Add review missing params');
+    }
+
+    return (!window.navigator || !window.navigator.onLine)
+      ? this.addOfflineReview(formData)
+      : this.addOnlineReview(formData);
+  }
+
+  onNetworkConnection() {
+    const iterateCursor = (cursor) => {
+      if (!cursor) return null;
+
+      cursor.value.forEach(formData => this.addOnlineReview(formData));
+
+      return cursor.delete().then(() => cursor.continue().then(iterateCursor));
+    };
+
+    return this.dbPromise
+      .then(db => db.transaction('offline-reviews', 'readwrite').objectStore('offline-reviews').openCursor())
+      .then(iterateCursor);
   }
 
   /**

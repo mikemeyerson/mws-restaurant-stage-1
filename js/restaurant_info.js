@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.initMap();
 });
 
-window.addEventListener('online', api.addOfflineReviews.bind(api));
+window.addEventListener('online', api.onNetworkConnection.bind(api));
 
 /**
  * Initialize leaflet map
@@ -71,9 +71,17 @@ window.fetchRestaurantFromURL = () => {
 const getSubmitListener = id => (event) => {
   event.preventDefault();
 
-  const formData = new FormData(event.target);
-  formData.append('restaurant_id', id);
-  formData.append('id', Date.now());
+  const [reviewerName, rating, comments] = event.target.elements;
+  const timestamp = Date.now();
+  const formData = {
+    comments: comments.value,
+    createdAt: timestamp,
+    id: timestamp,
+    name: reviewerName.value,
+    rating: parseInt(rating.value, 10),
+    restaurant_id: parseInt(id, 10),
+    updatedAt: timestamp,
+  };
 
   api.addReview(formData)
     .then(() => {
