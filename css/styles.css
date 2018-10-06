@@ -193,6 +193,7 @@ nav h1 a {
   box-sizing: border-box;
 }
 #restaurants-list .restaurant-img-wrapper {
+  position: relative;
   width: 40%;
 }
 #restaurants-list .restaurant-img {
@@ -361,7 +362,6 @@ nav h1 a {
     flex-wrap: wrap-reverse;
   }
   #restaurants-list .restaurant-img-wrapper {
-    position: relative;
     width: 100%;
   }
   #restaurants-list .restaurant-details {
